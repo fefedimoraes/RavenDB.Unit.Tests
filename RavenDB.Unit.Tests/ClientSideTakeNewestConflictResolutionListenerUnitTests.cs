@@ -12,9 +12,9 @@ using Xunit;
 
 namespace RavenDB.Unit.Tests
 {
-    public class TakeNewestConflictResolutionListenerUnitTests : IDisposable
+    public class ClientSideTakeNewestConflictResolutionListenerUnitTests : IDisposable
     {
-        public TakeNewestConflictResolutionListenerUnitTests()
+        public ClientSideTakeNewestConflictResolutionListenerUnitTests()
         {
             const int masterServerPort = 9900;
             const int failoverServerPort = 9901;
@@ -91,7 +91,7 @@ namespace RavenDB.Unit.Tests
             FailoverServer.Dispose();
         }
 
-        [Fact(DisplayName = "After establishing replication, conflicts should be solved when loading conflicting documents.")]
+        [Fact(DisplayName = "After establishing replication, conflicts should be solved when loading conflicting documents")]
         public void UsingLoad()
         {
             const string userDocumentId = "users/someuser";
@@ -126,7 +126,7 @@ namespace RavenDB.Unit.Tests
             }
         }
 
-        [Fact(DisplayName = "After establishing replication, conflicts should be solved when querying conflicting documents.")]
+        [Fact(DisplayName = "After establishing replication, conflicts should be solved when querying conflicting documents")]
         public void UsingQuery()
         {
             const string userDocumentId = "users/someuser";
@@ -162,7 +162,7 @@ namespace RavenDB.Unit.Tests
             }
         }
 
-        [Fact(DisplayName = "After establishing replication, conflicts should be solved when loading documents starting with prefix.")]
+        [Fact(DisplayName = "After establishing replication, conflicts should be solved when loading documents starting with prefix")]
         public void UsingLoadStartingWith()
         {
             const string usersPrefix = "users/";

@@ -95,7 +95,8 @@
     <Compile Include="Extensions\DatabaseCommandsExtensions.cs" />
     <Compile Include="Extensions\DocumentSessionExtension.cs" />
     <Compile Include="Extensions\DocumentStoreExtensions.cs" />
-    <Compile Include="TakeNewestConflictResolutionListenerUnitTests.cs" />
+    <Compile Include="ServerSideTakeNewestReplicationConflictResolverUnitTests.cs" />
+    <Compile Include="ClientSideTakeNewestConflictResolutionListenerUnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
