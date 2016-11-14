@@ -13,7 +13,7 @@ using Xunit;
 
 namespace RavenDB.Unit.Tests
 {
-    public class ServerSideTakeNewestReplicationConflictResolverUnitTests
+    public class ServerSideTakeNewestReplicationConflictResolverUnitTests : IDisposable
     {
         public ServerSideTakeNewestReplicationConflictResolverUnitTests()
         {
