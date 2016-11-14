@@ -3,11 +3,10 @@ using System.IO;
 using System.Threading;
 using Raven.Abstractions.Data;
 using Raven.Abstractions.Replication;
-using Raven.Bundles.Replication.Plugins;
 using Raven.Client.Document;
 using Raven.Client.Embedded;
 using Raven.Client.Indexes;
-using Raven.Json.Linq;
+using RavenDb.ReplicationConflictResolver;
 using RavenDB.Unit.Tests.Extensions;
 using Xunit;
 
@@ -22,7 +21,10 @@ namespace RavenDB.Unit.Tests
             const string defaultDatabase = "ReplicatingDatabase";
             const string loopbackHttpAddress = "http://127.0.0.1";
 
-            var currentDirectory = Directory.GetCurrentDirectory();
+            var conflictResolverPluginName = typeof(DocumentReplicationConflictResolver).Assembly.GetName().Name + ".dll";
+
+            PluginsDirectory = new DirectoryInfo("RavenPlugins").EnsureExists();
+            File.Copy(conflictResolverPluginName, Path.Combine(PluginsDirectory.Name, conflictResolverPluginName), true);
 
             MasterServer = new EmbeddableDocumentStore
             {
@@ -31,7 +33,7 @@ namespace RavenDB.Unit.Tests
                 Configuration =
                 {
                     Port = masterServerPort,
-                    PluginsDirectory = currentDirectory,
+                    PluginsDirectory = PluginsDirectory.Name,
                     Settings = { { "Raven/ActiveBundles", "Replication" } }
                 }
             };
@@ -43,7 +45,7 @@ namespace RavenDB.Unit.Tests
                 Configuration =
                 {
                     Port = failoverServerPort,
-                    PluginsDirectory = currentDirectory,
+                    PluginsDirectory = PluginsDirectory.Name,
                     Settings = { { "Raven/ActiveBundles", "Replication" } }
                 }
             };
@@ -77,6 +79,8 @@ namespace RavenDB.Unit.Tests
             FailoverClient.ExecuteIndex(new RavenDocumentsByEntityName());
         }
 
+        public DirectoryInfo PluginsDirectory { get; set; }
+
         public DocumentStore MasterClient { get; }
 
         public DocumentStore FailoverClient { get; }
@@ -91,6 +95,8 @@ namespace RavenDB.Unit.Tests
             FailoverClient.Dispose();
             MasterServer.Dispose();
             FailoverServer.Dispose();
+
+            PluginsDirectory.Delete(true);
         }
 
         [Fact(DisplayName = "On loading, conflicts should be handled in the server side")]
@@ -130,19 +136,6 @@ namespace RavenDB.Unit.Tests
 
                 // Assert
                 Assert.Equal(user.Name, "AnotherName");
-            }
-        }
-
-        private class TakeNewestConflictResolutionListener : AbstractDocumentReplicationConflictResolver
-        {
-            public TakeNewestConflictResolutionListener()
-            {
-
-            }
-
-            public override bool TryResolve(string id, RavenJObject metadata, RavenJObject document, JsonDocument existingDoc, Func<string, JsonDocument> getDocument)
-            {
-                return true;
             }
         }
 
