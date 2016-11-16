@@ -96,6 +96,7 @@
     <Compile Include="Extensions\DirectoryInfoExtensions.cs" />
     <Compile Include="Extensions\DocumentSessionExtension.cs" />
     <Compile Include="Extensions\DocumentStoreExtensions.cs" />
+    <Compile Include="MasterMasterServerSideTakeNewestReplicationConflictResolverUnitTests.cs" />
     <Compile Include="ServerSideTakeNewestReplicationConflictResolverUnitTests.cs" />
     <Compile Include="ClientSideTakeNewestConflictResolutionListenerUnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
