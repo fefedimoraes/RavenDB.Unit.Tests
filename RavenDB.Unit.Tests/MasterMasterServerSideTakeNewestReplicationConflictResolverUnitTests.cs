@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using Raven.Abstractions.Data;
 using Raven.Abstractions.Replication;
 using Raven.Client.Document;
@@ -21,7 +22,7 @@ namespace RavenDB.Unit.Tests
             const string defaultDatabase = "ReplicatingDatabase";
             const string loopbackHttpAddress = "http://127.0.0.1";
 
-            var conflictResolverPluginName = typeof(DocumentReplicationConflictResolver).Assembly.GetName().Name + ".dll";
+            var conflictResolverPluginName = typeof(TakeNewestConflictResolver).Assembly.GetName().Name + ".dll";
 
             PluginsDirectory = new DirectoryInfo("RavenPlugins").EnsureExists();
             File.Copy(conflictResolverPluginName, Path.Combine(PluginsDirectory.Name, conflictResolverPluginName), true);
@@ -153,6 +154,76 @@ namespace RavenDB.Unit.Tests
             }
         }
 
+        [Fact]
+        public async Task MultipleDocuments()
+        {
+            const int start = 3000;
+            const int quantity = 1000;
+
+            // Arrange
+            Console.WriteLine("Establishing replication...");
+            FailoverClient.EstablishReplicationTo(new ReplicationDestination
+            {
+                Url = MasterClient.Url,
+                Database = MasterClient.DefaultDatabase,
+                TransitiveReplicationBehavior = TransitiveReplicationOptions.Replicate
+            });
+
+            MasterClient.EstablishReplicationTo(new ReplicationDestination
+            {
+                Url = FailoverClient.Url,
+                Database = FailoverClient.DefaultDatabase,
+                TransitiveReplicationBehavior = TransitiveReplicationOptions.Replicate
+            });
+
+            // Act
+            Console.WriteLine("Storing documents...");
+            var insertInStoreATask = InsertDocumentsAsync(MasterClient, start, quantity);
+            var insertInStoreBTask = InsertDocumentsAsync(FailoverClient, start, quantity);
+            await TaskEx.WhenAll(insertInStoreATask, insertInStoreBTask);
+
+            // Assert
+            Console.WriteLine("Checking documents on master...");
+            new ManualResetEvent(false).WaitOne();
+            using (var session = MasterClient.OpenSession())
+            {
+                for (var i = start; i < start + quantity; i++)
+                    session.Load<SomeDocument>($"SomeDocuments/{i}");
+            }
+
+            Console.WriteLine("Checking documents on failover...");
+            using (var session = FailoverClient.OpenSession())
+            {
+                for (var i = start; i < start + quantity; i++)
+                    session.Load<SomeDocument>($"SomeDocuments/{i}");
+            }
+        }
+
+        private static async Task InsertDocumentsAsync(DocumentStore documentStore, int start, int quantity)
+        {
+            await TaskEx.Yield();
+
+            for (int i = start; i < start + quantity; i++)
+            {
+                var document = new SomeDocument
+                {
+                    SomeInt = i,
+                    SomeString = i.ToString()
+                };
+
+                await InsertDocumentAsync(documentStore, document);
+            }
+        }
+
+        private static async Task InsertDocumentAsync(DocumentStore documentStore, SomeDocument document)
+        {
+            using (var session = documentStore.OpenAsyncSession())
+            {
+                await session.StoreAsync(document, $"SomeDocuments/{document.SomeInt}");
+                await session.SaveChangesAsync();
+            }
+        }
+
         private class ConflictObserver : IObserver<ReplicationConflictNotification>, IDisposable
         {
             public AutoResetEvent NewConflictEvent { get; } = new AutoResetEvent(false);
@@ -179,6 +250,13 @@ namespace RavenDB.Unit.Tests
         private class User
         {
             public string Name { get; set; }
+        }
+
+        public class SomeDocument
+        {
+            public int SomeInt { get; set; }
+
+            public string SomeString { get; set; }
         }
     }
 }

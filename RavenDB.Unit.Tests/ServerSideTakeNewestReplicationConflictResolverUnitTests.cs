@@ -21,7 +21,7 @@ namespace RavenDB.Unit.Tests
             const string defaultDatabase = "ReplicatingDatabase";
             const string loopbackHttpAddress = "http://127.0.0.1";
 
-            var conflictResolverPluginName = typeof(DocumentReplicationConflictResolver).Assembly.GetName().Name + ".dll";
+            var conflictResolverPluginName = typeof(TakeNewestConflictResolver).Assembly.GetName().Name + ".dll";
 
             PluginsDirectory = new DirectoryInfo("RavenPlugins").EnsureExists();
             File.Copy(conflictResolverPluginName, Path.Combine(PluginsDirectory.Name, conflictResolverPluginName), true);
