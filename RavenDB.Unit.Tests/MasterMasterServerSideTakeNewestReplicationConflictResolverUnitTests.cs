@@ -73,8 +73,10 @@ namespace RavenDB.Unit.Tests
 
             MasterServer.Initialize();
             FailoverServer.Initialize();
-            MasterClient.Initialize();
-            FailoverClient.Initialize();
+            MasterClient.InitializeWithoutCreatingDatabase();
+            FailoverClient.InitializeWithoutCreatingDatabase();
+            MasterClient.CreateDatabase(defaultDatabase);
+            FailoverClient.CreateDatabase(defaultDatabase);
 
             MasterClient.ExecuteIndex(new RavenDocumentsByEntityName());
             FailoverClient.ExecuteIndex(new RavenDocumentsByEntityName());
@@ -184,19 +186,12 @@ namespace RavenDB.Unit.Tests
 
             // Assert
             Console.WriteLine("Checking documents on master...");
-            new ManualResetEvent(false).WaitOne();
             using (var session = MasterClient.OpenSession())
-            {
-                for (var i = start; i < start + quantity; i++)
-                    session.Load<SomeDocument>($"SomeDocuments/{i}");
-            }
+                session.Advanced.LoadStartingWith<SomeDocument>("SomeDocuments/", null, 0, 1028);
 
             Console.WriteLine("Checking documents on failover...");
             using (var session = FailoverClient.OpenSession())
-            {
-                for (var i = start; i < start + quantity; i++)
-                    session.Load<SomeDocument>($"SomeDocuments/{i}");
-            }
+                session.Advanced.LoadStartingWith<SomeDocument>("SomeDocuments/", null, 0, 1028);
         }
 
         private static async Task InsertDocumentsAsync(DocumentStore documentStore, int start, int quantity)
